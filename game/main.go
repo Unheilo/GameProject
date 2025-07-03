@@ -78,37 +78,31 @@ func NewPortal(name string, Object Object, LocationSource Location, LocationDest
 	}
 }
 
-// declare items
-var Keys = Item{Name: "ключи", NeededBackpack: true}
-var Phone = Item{Name: "телефон", NeededBackpack: true}
-var Notes = Item{Name: "конспекты", NeededBackpack: true}
-
-// declare dress
-var Backpack = Dress{Name: "рюкзак", Backpack: true}
-
-// declare player
-var Stas = Player{Name: "стас"}
-
-// declare locations
-var Room = Location{Name: "комната"}
-var Hallway = Location{Name: "коридор", Object: []Object{door}}
-var Kitchen = Location{Name: "кухня", Object: []Object{table, chair}}
-var Street = Location{Name: "улица"}
-
-// declare objects
-var vardrobe = Object{Name: "шкаф"} //засуну его на улицу, шкаф в кустах
-var table = Object{Name: "стол"}
-var chair = Object{Name: "стул"}
-var door = Object{Name: "дверь", Item: []Item{Keys}, Condition: true}
-
-// declare portals
-var FromRoomToHallway = Portal{Name: "от комнаты к коридору", LocationSource: Room, LocationDestination: Hallway}
-var FromHallwayToRoom = Portal{Name: "от коридора к комнате", LocationSource: Hallway, LocationDestination: Room}
-var FromHallwayToKitchen = Portal{Name: "от коридора к кухне", LocationSource: Hallway, LocationDestination: Kitchen}
-var FromKitchenToHallway = Portal{Name: "от кухни к коридору", LocationSource: Kitchen, LocationDestination: Hallway}
-var FromHallwayToStreet = Portal{Name: "от коридора к улице", Object: door, LocationSource: Hallway, LocationDestination: Street}
-var FromStreetToHallway = Portal{Name: "от улицы к коридору", Object: door, LocationSource: Street, LocationDestination: Hallway}
-
 func main() {
-	InitItems()
+
+	Keys := NewItem("ключи", true)
+	Phone := NewItem("телефон", true)
+	Notes := NewItem("конспекты", true)
+
+	Vardrobe := NewObject("шкаф", []Item{}, false)
+	Table := NewObject("стол", []Item{}, false)
+	Chair := NewObject("стул", []Item{}, false)
+	Door := NewObject("дверь", []Item{*Keys}, true)
+
+	Backpack := NewDress("рюкзак", true)
+
+	Stas := NewPlayer("стас", []Item{})
+
+	Room := NewLocation("омната", []Object{})
+	Hallway := NewLocation("коридор", []Object{})
+	Kitchen := NewLocation("кухня", []Object{*Table, *Chair})
+	Street := NewLocation("улица", []Object{*Vardrobe})
+
+	FromRoomToHallway := NewPortal("от комнаты к коридору", Object{}, *Room, *Hallway)
+	FromHallwayToRoom := NewPortal("от коридора к комнате", Object{}, *Hallway, *Room)
+	FromHallwayToKitchen := NewPortal("от коридора к кухне", Object{}, *Hallway, *Kitchen)
+	FromKitchenToHallway := NewPortal("от кухни к коридору", Object{}, *Kitchen, *Hallway)
+	FromHallwayToStreet := NewPortal("от коридора к улице", *Door, *Hallway, *Street)
+	FromStreetToHallway := NewPortal("от улицы к коридору", *Door, *Street, *Hallway)
+
 }
