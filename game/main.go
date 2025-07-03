@@ -33,6 +33,51 @@ type Player struct {
 	Inventory []Item
 }
 
+func NewItem(name string, NeededBackpack bool) *Item {
+	return &Item{
+		Name:           name,
+		NeededBackpack: NeededBackpack,
+	}
+}
+
+func NewDress(name string, Backpack bool) *Dress {
+	return &Dress{
+		Name:     name,
+		Backpack: Backpack,
+	}
+}
+
+func NewPlayer(name string, Inventory []Item) *Player {
+	return &Player{
+		Name:      name,
+		Inventory: Inventory,
+	}
+}
+
+func NewLocation(name string, Object []Object) *Location {
+	return &Location{
+		Name:   name,
+		Object: Object,
+	}
+}
+
+func NewObject(name string, Item []Item, Condition bool) *Object {
+	return &Object{
+		Name:      name,
+		Item:      Item,
+		Condition: Condition,
+	}
+}
+
+func NewPortal(name string, Object Object, LocationSource Location, LocationDestination Location) *Portal {
+	return &Portal{
+		Name:                name,
+		Object:              Object,
+		LocationSource:      LocationSource,
+		LocationDestination: LocationDestination,
+	}
+}
+
 // declare items
 var Keys = Item{Name: "ключи", NeededBackpack: true}
 var Phone = Item{Name: "телефон", NeededBackpack: true}
