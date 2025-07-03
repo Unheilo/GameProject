@@ -1,8 +1,11 @@
 package main
 
+//structs
+
 type Location struct {
 	Name   string
 	Object []Object
+	Portal []*Portal
 }
 
 type Portal struct {
@@ -15,6 +18,7 @@ type Portal struct {
 type Object struct {
 	Name      string
 	Item      []Item
+	Dress     []Dress
 	Condition bool
 }
 
@@ -31,7 +35,11 @@ type Dress struct {
 type Player struct {
 	Name      string
 	Inventory []Item
+	Dress     []Dress
+	Location  Location
 }
+
+//entity constructors
 
 func NewItem(name string, NeededBackpack bool) *Item {
 	return &Item{
@@ -47,10 +55,12 @@ func NewDress(name string, Backpack bool) *Dress {
 	}
 }
 
-func NewPlayer(name string, Inventory []Item) *Player {
+func NewPlayer(name string, Inventory []Item, Dress []Dress, Location Location) *Player {
 	return &Player{
 		Name:      name,
 		Inventory: Inventory,
+		Dress:     Dress,
+		Location:  Location,
 	}
 }
 
@@ -58,13 +68,15 @@ func NewLocation(name string, Object []Object) *Location {
 	return &Location{
 		Name:   name,
 		Object: Object,
+		Portal: make([]*Portal, 0),
 	}
 }
 
-func NewObject(name string, Item []Item, Condition bool) *Object {
+func NewObject(name string, Item []Item, Dress []Dress, Condition bool) *Object {
 	return &Object{
 		Name:      name,
 		Item:      Item,
+		Dress:     Dress,
 		Condition: Condition,
 	}
 }
@@ -79,24 +91,73 @@ func NewPortal(name string, Object Object, LocationSource Location, LocationDest
 }
 
 func main() {
+	InitGame()
+}
+
+// Look activity
+func Look(Player *Player) string {
+	var InitialString string
+
+	EnvironmentString := LookEnvironment(&Player.Location)
+
+	PortalsString := LookPortals(&Player.Location)
+
+	InitialString += EnvironmentString + PortalsString
+
+	return InitialString
+}
+
+func LookEnvironment(Location *Location) string {
+	var InitialString string
+
+	for _, value := range Location.Object {
+		if !value.Condition {
+			InitialString += value.Name + " "
+			for _, value2 := range value.Item {
+				InitialString += value2.Name + ", "
+			}
+
+			for _, value3 := range value.Dress {
+				InitialString += value3.Name + ", "
+			}
+		}
+	}
+
+	return InitialString
+}
+
+func LookPortals(Location *Location) string {
+	var InitialString string
+	InitialString += "можно пройти - "
+
+	for _, value := range Location.Portal {
+		InitialString += value.LocationDestination.Name + ", "
+	}
+
+	return InitialString
+}
+
+// Look end activity
+
+func InitGame() {
 
 	Keys := NewItem("ключи", true)
-	Phone := NewItem("телефон", true)
+	//Phone := NewItem("телефон", true)
 	Notes := NewItem("конспекты", true)
-
-	Vardrobe := NewObject("шкаф", []Item{}, false)
-	Table := NewObject("стол", []Item{}, false)
-	Chair := NewObject("стул", []Item{}, false)
-	Door := NewObject("дверь", []Item{*Keys}, true)
+	Tea := NewItem("чай, надо собрать рюкзак и идти в универ", true)
 
 	Backpack := NewDress("рюкзак", true)
 
-	Stas := NewPlayer("стас", []Item{})
+	Wardrobe := NewObject("шкаф", []Item{}, []Dress{}, true)
+	TableRoom := NewObject("на столе:", []Item{*Keys, *Notes}, []Dress{*Backpack}, false)
+	TableKitchen := NewObject("на столе:", []Item{*Tea}, []Dress{}, false)
+	Chair := NewObject("на стуле:", []Item{}, []Dress{}, false)
+	Door := NewObject("дверь", []Item{*Keys}, []Dress{}, true)
 
-	Room := NewLocation("омната", []Object{})
-	Hallway := NewLocation("коридор", []Object{})
-	Kitchen := NewLocation("кухня", []Object{*Table, *Chair})
-	Street := NewLocation("улица", []Object{*Vardrobe})
+	Room := NewLocation("ты в своей комнате", []Object{*TableRoom})
+	Hallway := NewLocation("ничего интересного", []Object{*Door, *Wardrobe})
+	Kitchen := NewLocation("ты находишься на кухне", []Object{*TableKitchen, *Chair})
+	Street := NewLocation("на улице весна", []Object{})
 
 	FromRoomToHallway := NewPortal("от комнаты к коридору", Object{}, *Room, *Hallway)
 	FromHallwayToRoom := NewPortal("от коридора к комнате", Object{}, *Hallway, *Room)
@@ -104,5 +165,12 @@ func main() {
 	FromKitchenToHallway := NewPortal("от кухни к коридору", Object{}, *Kitchen, *Hallway)
 	FromHallwayToStreet := NewPortal("от коридора к улице", *Door, *Hallway, *Street)
 	FromStreetToHallway := NewPortal("от улицы к коридору", *Door, *Street, *Hallway)
+
+	Room.Portal = append(Room.Portal, FromRoomToHallway)
+	Hallway.Portal = append(Hallway.Portal, FromHallwayToRoom, FromHallwayToKitchen, FromHallwayToStreet)
+	Kitchen.Portal = append(Kitchen.Portal, FromKitchenToHallway)
+	Street.Portal = append(Street.Portal, FromStreetToHallway)
+
+	student := NewPlayer("студент", []Item{}, []Dress{}, *Kitchen)
 
 }
