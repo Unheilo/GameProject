@@ -1,5 +1,9 @@
 package main
 
+import (
+	"strings"
+)
+
 //structs
 
 type Location struct {
@@ -279,6 +283,27 @@ func InitGame() {
 	Kitchen.Portal = append(Kitchen.Portal, FromKitchenToHallway)
 	Street.Portal = append(Street.Portal, FromStreetToHallway)
 
-	student := NewPlayer("студент", []Item{}, []Dress{}, *Kitchen)
+	Player := NewPlayer("студент", []Item{}, []Dress{}, *Kitchen)
 
+}
+
+func handleCommand(command string) string {
+	SplittedString := strings.Split(command, " ")
+	switch SplittedString[0] {
+	case "осмотреться":
+		return Look(Player)
+	case "завтракать":
+		return TakeBreakfast()
+	case "надеть":
+		return PutOnDress(Player, SplittedString[1])
+	case "взять":
+		return TakeItem(Player, SplittedString[1])
+	case "применить":
+		return UseItem(Player, SplittedString[1], SplittedString[2])
+	case "идти":
+		return Move(Player, SplittedString[1])
+	default:
+		return "неизвестная команда"
+
+	}
 }
