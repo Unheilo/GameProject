@@ -16,10 +16,11 @@ type Portal struct {
 }
 
 type Object struct {
-	Name      string
-	Item      []Item
-	Dress     []Dress
-	Condition bool
+	Name          string
+	Item          []Item
+	Dress         []Dress
+	Condition     bool
+	ConditionItem Item
 }
 
 type Item struct {
@@ -33,10 +34,10 @@ type Dress struct {
 }
 
 type Player struct {
-	Name      string
-	Inventory []Item
-	Dress     []Dress
-	Location  Location
+	Name     string
+	Item     []Item
+	Dress    []Dress
+	Location Location
 }
 
 //entity constructors
@@ -55,12 +56,12 @@ func NewDress(name string, Backpack bool) *Dress {
 	}
 }
 
-func NewPlayer(name string, Inventory []Item, Dress []Dress, Location Location) *Player {
+func NewPlayer(name string, Item []Item, Dress []Dress, Location Location) *Player {
 	return &Player{
-		Name:      name,
-		Inventory: Inventory,
-		Dress:     Dress,
-		Location:  Location,
+		Name:     name,
+		Item:     Item,
+		Dress:    Dress,
+		Location: Location,
 	}
 }
 
@@ -72,12 +73,13 @@ func NewLocation(name string, Object []Object) *Location {
 	}
 }
 
-func NewObject(name string, Item []Item, Dress []Dress, Condition bool) *Object {
+func NewObject(name string, Item []Item, Dress []Dress, Condition bool, ConditionItem Item) *Object {
 	return &Object{
-		Name:      name,
-		Item:      Item,
-		Dress:     Dress,
-		Condition: Condition,
+		Name:          name,
+		Item:          Item,
+		Dress:         Dress,
+		Condition:     Condition,
+		ConditionItem: ConditionItem,
 	}
 }
 
@@ -139,6 +141,112 @@ func LookPortals(Location *Location) string {
 
 // Look end activity
 
+// Move activity
+func Move(Player *Player, Location *Location) string {
+
+	moveCheckResult := CheckMove(Player, Location)
+
+	switch moveCheckResult {
+	case "можно переместиться":
+		Player.Location = *Location
+		return "Ты переместился в " + Location.Name
+	case "дверь закрыта":
+		return "Дверь закрыта. Не можешь пройти в " + Location.Name
+	case "нет пути":
+		return "Нет пути в " + Location.Name
+	default:
+		return "Нет пути в " + Location.Name
+	}
+}
+
+func CheckMove(Player *Player, Location *Location) string {
+
+	for _, portal := range Player.Location.Portal {
+		if &portal.LocationDestination == Location {
+			if portal.Object.Condition {
+				return "closed" // Дверь закрыта
+			}
+			return "open" // Дверь открыта, перемещение возможно
+		}
+	}
+	return "noway" // Нет портала в направлении
+
+}
+
+// end move activity
+
+// PutOnDress activity
+
+func PutOnDress(Player *Player, Dress *Dress) string {
+	for i, object := range Player.Location.Object {
+		for j, valueDress := range object.Dress {
+			if valueDress == *Dress {
+
+				Player.Dress = append(Player.Dress, *Dress)
+				object.Dress = append(object.Dress[:j], object.Dress[j+1:]...)
+
+				Player.Location.Object[i] = object
+
+				return "вы надели: " + Dress.Name
+			}
+		}
+	}
+	return "не удалось надеть " + Dress.Name
+}
+
+// end PutOnDress activity
+
+// TakeBreakfast activity
+
+func TakeBreakfast() string {
+	return "неизвестная команда"
+}
+
+// end TakeBreakfast activity
+
+//  TakeItem activity
+
+func TakeItem(Player *Player, Item *Item) string {
+	for i, object := range Player.Location.Object {
+		for j, valueItem := range object.Item {
+			if valueItem == *Item {
+
+				if len(Player.Dress) > 0 {
+					Player.Item = append(Player.Item, *Item)
+					object.Item = append(object.Item[:j], object.Item[j+1:]...)
+
+					Player.Location.Object[i] = object
+					return "предмет добавлен в инвентарь: " + Item.Name
+				} else {
+					return "некуда класть"
+				}
+			}
+		}
+	}
+	return "нет такого"
+}
+
+// end TakeItem activity
+
+// Use activity
+
+func UseItem(Player *Player, Item *Item, Object *Object) string {
+	for _, playerItem := range Player.Item {
+		if playerItem == *Item {
+			if Object.ConditionItem == *Item {
+				Object.Condition = false
+				return Object.Name + " открыта"
+			} else {
+				return "не к чему применить"
+			}
+		}
+	}
+
+	return "нет предмета в инвентаре: " + Item.Name
+}
+
+// end use activity
+
 func InitGame() {
 
 	Keys := NewItem("ключи", true)
@@ -148,11 +256,11 @@ func InitGame() {
 
 	Backpack := NewDress("рюкзак", true)
 
-	Wardrobe := NewObject("шкаф", []Item{}, []Dress{}, true)
-	TableRoom := NewObject("на столе:", []Item{*Keys, *Notes}, []Dress{*Backpack}, false)
-	TableKitchen := NewObject("на столе:", []Item{*Tea}, []Dress{}, false)
-	Chair := NewObject("на стуле:", []Item{}, []Dress{}, false)
-	Door := NewObject("дверь", []Item{*Keys}, []Dress{}, true)
+	Wardrobe := NewObject("шкаф", []Item{}, []Dress{}, true, Item{})
+	TableRoom := NewObject("на столе:", []Item{*Keys, *Notes}, []Dress{*Backpack}, false, Item{})
+	TableKitchen := NewObject("на столе:", []Item{*Tea}, []Dress{}, false, Item{})
+	Chair := NewObject("на стуле:", []Item{}, []Dress{}, false, Item{})
+	Door := NewObject("дверь", []Item{*Keys}, []Dress{}, true, *Keys)
 
 	Room := NewLocation("ты в своей комнате", []Object{*TableRoom})
 	Hallway := NewLocation("ничего интересного", []Object{*Door, *Wardrobe})
