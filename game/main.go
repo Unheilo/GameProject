@@ -125,7 +125,7 @@ func LookEnvironment(loc *Location, selector bool) string {
 	}
 	if loc == InitialLocation {
 		descriptions = append(descriptions, loc.LookLocation)
-		InitialLocation = nil
+		//InitialLocation = nil
 	}
 
 	for _, obj := range loc.Object {
@@ -288,7 +288,7 @@ func initGame() {
 	room := NewLocation("комната", "ты в своей комнате", "")
 	hallway := NewLocation("коридор", "ничего интересного", "ничего интересного")
 	kitchen := NewLocation("кухня", "ты находишься на кухне", "кухня, ничего интересного")
-	street := NewLocation("улица", "на улице весна", "жарковато")
+	street := NewLocation("улица", "на улице весна. можно пройти - домой", "жарковато")
 
 	room.Object = append(room.Object, tableRoom, chair)
 	hallway.Object = append(hallway.Object, door, wardrobe)
@@ -299,12 +299,12 @@ func initGame() {
 	hallwayToKitchen := NewPortal("проход", nil, hallway, kitchen)
 	kitchenToHallway := NewPortal("проход", nil, kitchen, hallway)
 	hallwayToStreet := NewPortal("дверь", door, hallway, street)
-	streetToHallway := NewPortal("дверь", door, street, hallway)
+	//streetToHallway := NewPortal("дверь", door, street, hallway)
 
 	room.Portal = append(room.Portal, roomToHallway)
 	hallway.Portal = append(hallway.Portal, hallwayToKitchen, hallwayToRoom, hallwayToStreet)
 	kitchen.Portal = append(kitchen.Portal, kitchenToHallway)
-	street.Portal = append(street.Portal, streetToHallway)
+	//street.Portal = append(street.Portal, streetToHallway)
 
 	AllLocations = []*Location{room, hallway, kitchen, street}
 	InitialLocation = kitchen
