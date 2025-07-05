@@ -7,6 +7,7 @@ import (
 
 var RealPlayer *Player
 var AllLocations []*Location
+var InitialLocation *Location
 
 type Location struct {
 	Name         string
@@ -101,8 +102,8 @@ func NewPortal(name string, obj *Object, src, dst *Location) *Portal {
 }
 
 // Look activity
-func Look(player *Player) string {
-	env := LookEnvironment(player.Location)
+func Look(player *Player, selector bool) string {
+	env := LookEnvironment(player.Location, selector)
 	portals := LookPortals(player.Location)
 
 	result := env
@@ -114,10 +115,18 @@ func Look(player *Player) string {
 	return result
 }
 
-func LookEnvironment(loc *Location) string {
+func LookEnvironment(loc *Location, selector bool) string {
 
 	var descriptions []string
-	descriptions = append(descriptions, loc.LookLocation)
+
+	if !selector {
+		descriptions = append(descriptions, loc.LookLocation)
+		return strings.Join(descriptions, ", ")
+	}
+	if loc == InitialLocation {
+		descriptions = append(descriptions, loc.LookLocation)
+		InitialLocation = nil
+	}
 
 	for _, obj := range loc.Object {
 
@@ -137,8 +146,6 @@ func LookEnvironment(loc *Location) string {
 
 			if len(allThings) > 0 {
 				descriptions = append(descriptions, fmt.Sprintf("%s: %s", obj.Name, strings.Join(allThings, ", ")))
-			} else {
-				descriptions = append(descriptions, obj.Name)
 			}
 		}
 	}
@@ -169,7 +176,7 @@ func Move(player *Player, locationName string) string {
 			}
 
 			player.Location = portal.LocationDestination
-			return Look(player)
+			return Look(player, false)
 		}
 	}
 	return "нет пути в " + locationName
@@ -177,7 +184,6 @@ func Move(player *Player, locationName string) string {
 
 // PutOnDress activity
 func PutOnDress(player *Player, dressName string) string {
-
 	for _, obj := range player.Location.Object {
 		for i, dress := range obj.Dress {
 			if dress.Name == dressName {
@@ -222,6 +228,7 @@ func TakeItem(player *Player, itemName string) string {
 // Use activity
 func UseItem(player *Player, itemName, objectName string) string {
 	// Ищем предмет у игрока
+
 	var targetItem *Item
 	for _, item := range player.Item {
 		if item.Name == itemName {
@@ -229,6 +236,7 @@ func UseItem(player *Player, itemName, objectName string) string {
 			break
 		}
 	}
+
 	if targetItem == nil {
 		return "нет предмета в инвентаре - " + itemName
 	}
@@ -263,7 +271,7 @@ func initGame() {
 
 	keys := NewItem("ключи", true)
 	notes := NewItem("конспекты", true)
-	tea := NewItem("чай", true)
+	tea := NewItem("чай, надо собрать рюкзак и идти в универ", true)
 
 	backpack := NewDress("рюкзак", true)
 
@@ -294,12 +302,12 @@ func initGame() {
 	streetToHallway := NewPortal("дверь", door, street, hallway)
 
 	room.Portal = append(room.Portal, roomToHallway)
-	hallway.Portal = append(hallway.Portal, hallwayToRoom, hallwayToStreet, hallwayToKitchen)
+	hallway.Portal = append(hallway.Portal, hallwayToKitchen, hallwayToRoom, hallwayToStreet)
 	kitchen.Portal = append(kitchen.Portal, kitchenToHallway)
 	street.Portal = append(street.Portal, streetToHallway)
 
 	AllLocations = []*Location{room, hallway, kitchen, street}
-
+	InitialLocation = kitchen
 	RealPlayer = NewPlayer("студент", kitchen)
 
 }
@@ -313,7 +321,7 @@ func handleCommand(command string) string {
 
 	switch parts[0] {
 	case "осмотреться":
-		return Look(RealPlayer)
+		return Look(RealPlayer, true)
 	case "завтракать":
 		return TakeBreakfast()
 	case "надеть":
@@ -339,4 +347,17 @@ func handleCommand(command string) string {
 	default:
 		return "неизвестная команда"
 	}
+}
+
+func main() {
+
+	initGame()
+
+	command1 := "идти коридор"
+	command2 := "идти комната"
+	command3 := "надеть рюкзак"
+
+	fmt.Println(handleCommand(command1))
+	fmt.Println(handleCommand(command2))
+	fmt.Println(handleCommand(command3))
 }
