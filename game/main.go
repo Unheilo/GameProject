@@ -136,7 +136,6 @@ func LookEnvironment(loc *Location, selector bool) string {
 	}
 	if loc == InitialLocation {
 		descriptions = append(descriptions, loc.LookLocation)
-		//InitialLocation = nil
 	}
 
 	for _, obj := range loc.Object {
@@ -320,6 +319,7 @@ func initGame() {
 	chair.Dress = append(chair.Dress, backpack)
 	tableKitchen.Item = append(tableKitchen.Item, tea, NoBackpackIntent)
 
+	// set custom intents for room - по хорошему весь код так сделать с кастомными событиями
 	room := NewLocation("комната", "ты в своей комнате", "пустая комната",
 		func(loc *Location) string {
 			ItemCounter := 0
@@ -343,14 +343,19 @@ func initGame() {
 						player.Dress = append(player.Dress, dress)
 						obj.Dress = append(obj.Dress[:i], obj.Dress[i+1:]...)
 
-						for _, obj2 := range InitialLocation.Object {
-							for c, item2 := range obj2.Item {
-								if item2.Name == "надо собрать рюкзак и идти в универ" {
-									obj2.Item = append(obj2.Item[:c], obj.Item[c+1:]...)
-									obj2.Item = append(obj2.Item, NewItem("надо идти в универ", false))
+						IntentFunc := func(Location *Location) bool {
+							for _, obj := range Location.Object { // Обратите внимание на исправление с `Object` на `Objects`
+								for i, item := range obj.Item { // Замените `Item` на `Items`, если это необходимо
+									if item.Name == "надо собрать рюкзак и идти в универ" {
+										obj.Item = append(obj.Item[:i], obj.Item[i+1:]...)                // Замените `Item` на `Items`
+										obj.Item = append(obj.Item, NewItem("надо идти в универ", false)) // Замените `Item` на `Items`
+										return true
+									}
 								}
 							}
+							return false
 						}
+						IntentFunc(InitialLocation)
 
 						return "вы надели: " + dressName
 					}
@@ -363,7 +368,6 @@ func initGame() {
 	street := NewLocation("улица", "на улице весна. можно пройти - домой", "жарковато", nil, nil)
 	kitchen := NewLocation("кухня", "ты находишься на кухне", "кухня, ничего интересного", nil,
 		nil)
-
 	room.Object = append(room.Object, tableRoom, chair)
 	hallway.Object = append(hallway.Object, door, wardrobe)
 	kitchen.Object = append(kitchen.Object, tableKitchen)
@@ -373,12 +377,10 @@ func initGame() {
 	hallwayToKitchen := NewPortal("проход", nil, hallway, kitchen)
 	kitchenToHallway := NewPortal("проход", nil, kitchen, hallway)
 	hallwayToStreet := NewPortal("дверь", door, hallway, street)
-	//streetToHallway := NewPortal("дверь", door, street, hallway)
 
 	room.Portal = append(room.Portal, roomToHallway)
 	hallway.Portal = append(hallway.Portal, hallwayToKitchen, hallwayToRoom, hallwayToStreet)
 	kitchen.Portal = append(kitchen.Portal, kitchenToHallway)
-	//street.Portal = append(street.Portal, streetToHallway)
 
 	AllLocations = []*Location{room, hallway, kitchen, street}
 	InitialLocation = kitchen
@@ -387,7 +389,7 @@ func initGame() {
 }
 
 func handleCommand(command string) string {
-	//parts := strings.Fields(command)
+
 	parts := strings.Split(command, " ")
 	if len(parts) == 0 {
 		return "неизвестная команда"
