@@ -190,11 +190,25 @@ func PutOnDress(player *Player, dressName string) string {
 
 				player.Dress = append(player.Dress, dress)
 				obj.Dress = append(obj.Dress[:i], obj.Dress[i+1:]...)
+				KitchenIntent(InitialLocation)
 				return "вы надели: " + dressName
 			}
 		}
 	}
 	return "не удалось надеть " + dressName
+}
+
+func KitchenIntent(Location *Location) bool {
+	for _, obj := range Location.Object {
+		for i, item := range obj.Item {
+			if item.Name == "надо собрать рюкзак и идти в универ" {
+				obj.Item = append(obj.Item[:i], obj.Item[i+1:]...)
+				obj.Item = append(obj.Item, NewItem("надо идти в универ", false))
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // TakeItem activity
@@ -271,7 +285,9 @@ func initGame() {
 
 	keys := NewItem("ключи", true)
 	notes := NewItem("конспекты", true)
-	tea := NewItem("чай, надо собрать рюкзак и идти в универ", true)
+	tea := NewItem("чай", true)
+
+	NoBackpackIntent := NewItem("надо собрать рюкзак и идти в универ", false)
 
 	backpack := NewDress("рюкзак", true)
 
@@ -283,7 +299,7 @@ func initGame() {
 
 	tableRoom.Item = append(tableRoom.Item, keys, notes)
 	chair.Dress = append(chair.Dress, backpack)
-	tableKitchen.Item = append(tableKitchen.Item, tea)
+	tableKitchen.Item = append(tableKitchen.Item, tea, NoBackpackIntent)
 
 	room := NewLocation("комната", "ты в своей комнате", "")
 	hallway := NewLocation("коридор", "ничего интересного", "ничего интересного")
