@@ -15,6 +15,7 @@ type Location struct {
 	LookLocation string
 	Object       []*Object
 	Portal       []*Portal
+	CustomOnLook func(loc *Location) string
 }
 
 type Portal struct {
@@ -72,13 +73,14 @@ func NewPlayer(name string, startLocation *Location) *Player {
 	}
 }
 
-func NewLocation(name string, looklocation string, movelocation string) *Location {
+func NewLocation(name string, looklocation string, movelocation string, function func(loc *Location) string) *Location {
 	return &Location{
 		Name:         name,
 		LookLocation: looklocation,
 		MoveLocation: movelocation,
 		Object:       []*Object{},
 		Portal:       []*Portal{},
+		CustomOnLook: function,
 	}
 }
 
@@ -307,10 +309,26 @@ func initGame() {
 	chair.Dress = append(chair.Dress, backpack)
 	tableKitchen.Item = append(tableKitchen.Item, tea, NoBackpackIntent)
 
-	room := NewLocation("комната", "ты в своей комнате", "")
-	hallway := NewLocation("коридор", "ничего интересного", "ничего интересного")
-	kitchen := NewLocation("кухня", "ты находишься на кухне", "кухня, ничего интересного")
-	street := NewLocation("улица", "на улице весна. можно пройти - домой", "жарковато")
+	room := NewLocation("комната", "ты в своей комнате", "пустая комната",
+		func(loc *Location) string {
+			ItemCounter := 0
+			for _, obj := range loc.Object {
+				for _, item := range obj.Item {
+					if item != nil {
+						ItemCounter += 1
+					}
+				}
+			}
+
+			if ItemCounter == 0 {
+				return "пустая комната. можно пройти - коридор"
+			}
+			return Look(RealPlayer, true)
+		})
+
+	hallway := NewLocation("коридор", "ничего интересного", "ничего интересного", nil)
+	street := NewLocation("улица", "на улице весна. можно пройти - домой", "жарковато", nil)
+	kitchen := NewLocation("кухня", "ты находишься на кухне", "кухня, ничего интересного", nil)
 
 	room.Object = append(room.Object, tableRoom, chair)
 	hallway.Object = append(hallway.Object, door, wardrobe)
@@ -343,6 +361,9 @@ func handleCommand(command string) string {
 
 	switch parts[0] {
 	case "осмотреться":
+		if RealPlayer.Location.CustomOnLook != nil {
+			return RealPlayer.Location.CustomOnLook(RealPlayer.Location)
+		}
 		return Look(RealPlayer, true)
 	case "завтракать":
 		return TakeBreakfast()
@@ -369,17 +390,4 @@ func handleCommand(command string) string {
 	default:
 		return "неизвестная команда"
 	}
-}
-
-func main() {
-
-	initGame()
-
-	command1 := "идти коридор"
-	command2 := "идти комната"
-	command3 := "надеть рюкзак"
-
-	fmt.Println(handleCommand(command1))
-	fmt.Println(handleCommand(command2))
-	fmt.Println(handleCommand(command3))
 }
