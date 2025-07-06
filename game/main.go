@@ -120,6 +120,12 @@ func LookEnvironment(loc *Location, selector bool) string {
 	var descriptions []string
 
 	if !selector {
+
+		if loc == InitialLocation {
+			descriptions = append(descriptions, loc.MoveLocation)
+			return strings.Join(descriptions, ", ")
+		}
+
 		descriptions = append(descriptions, loc.LookLocation)
 		return strings.Join(descriptions, ", ")
 	}
