@@ -10,12 +10,13 @@ var AllLocations []*Location
 var InitialLocation *Location
 
 type Location struct {
-	Name         string
-	MoveLocation string
-	LookLocation string
-	Object       []*Object
-	Portal       []*Portal
-	CustomOnLook func(loc *Location) string
+	Name          string
+	MoveLocation  string
+	LookLocation  string
+	Object        []*Object
+	Portal        []*Portal
+	CustomOnLook  func(loc *Location) string
+	CustomOnDress func(player *Player, dressName string) string
 }
 
 type Portal struct {
@@ -73,14 +74,16 @@ func NewPlayer(name string, startLocation *Location) *Player {
 	}
 }
 
-func NewLocation(name string, looklocation string, movelocation string, function func(loc *Location) string) *Location {
+func NewLocation(name string, looklocation string, movelocation string, function func(loc *Location) string,
+	CustomOnDress func(player *Player, dressName string) string) *Location {
 	return &Location{
-		Name:         name,
-		LookLocation: looklocation,
-		MoveLocation: movelocation,
-		Object:       []*Object{},
-		Portal:       []*Portal{},
-		CustomOnLook: function,
+		Name:          name,
+		LookLocation:  looklocation,
+		MoveLocation:  movelocation,
+		Object:        []*Object{},
+		Portal:        []*Portal{},
+		CustomOnLook:  function,
+		CustomOnDress: CustomOnDress,
 	}
 }
 
@@ -198,7 +201,6 @@ func PutOnDress(player *Player, dressName string) string {
 
 				player.Dress = append(player.Dress, dress)
 				obj.Dress = append(obj.Dress[:i], obj.Dress[i+1:]...)
-				KitchenIntent(InitialLocation)
 				return "вы надели: " + dressName
 			}
 		}
@@ -206,17 +208,26 @@ func PutOnDress(player *Player, dressName string) string {
 	return "не удалось надеть " + dressName
 }
 
-func KitchenIntent(Location *Location) bool {
-	for _, obj := range Location.Object {
-		for i, item := range obj.Item {
-			if item.Name == "надо собрать рюкзак и идти в универ" {
-				obj.Item = append(obj.Item[:i], obj.Item[i+1:]...)
-				obj.Item = append(obj.Item, NewItem("надо идти в универ", false))
-				return true
+func PutOnDressCustom(player *Player, dressName string) string {
+	for _, obj := range player.Location.Object {
+		for i, dress := range obj.Dress {
+			if dress.Name == dressName {
+
+				player.Dress = append(player.Dress, dress)
+				obj.Dress = append(obj.Dress[:i], obj.Dress[i+1:]...)
+				for _, obj := range InitialLocation.Object {
+					for i, item := range obj.Item {
+						if item.Name == "надо собрать рюкзак и идти в универ" {
+							obj.Item = append(obj.Item[:i], obj.Item[i+1:]...)
+							obj.Item = append(obj.Item, NewItem("надо идти в универ", false))
+						}
+					}
+				}
+				return "вы надели: " + dressName
 			}
 		}
 	}
-	return false
+	return "не удалось надеть " + dressName
 }
 
 // TakeItem activity
@@ -324,11 +335,34 @@ func initGame() {
 				return "пустая комната. можно пройти - коридор"
 			}
 			return Look(RealPlayer, true)
+		}, func(player *Player, dressName string) string {
+			for _, obj := range player.Location.Object {
+				for i, dress := range obj.Dress {
+					if dress.Name == dressName {
+
+						player.Dress = append(player.Dress, dress)
+						obj.Dress = append(obj.Dress[:i], obj.Dress[i+1:]...)
+
+						for _, obj2 := range InitialLocation.Object {
+							for c, item2 := range obj2.Item {
+								if item2.Name == "надо собрать рюкзак и идти в универ" {
+									obj2.Item = append(obj2.Item[:c], obj.Item[c+1:]...)
+									obj2.Item = append(obj2.Item, NewItem("надо идти в универ", false))
+								}
+							}
+						}
+
+						return "вы надели: " + dressName
+					}
+				}
+			}
+			return "не удалось надеть " + dressName
 		})
 
-	hallway := NewLocation("коридор", "ничего интересного", "ничего интересного", nil)
-	street := NewLocation("улица", "на улице весна. можно пройти - домой", "жарковато", nil)
-	kitchen := NewLocation("кухня", "ты находишься на кухне", "кухня, ничего интересного", nil)
+	hallway := NewLocation("коридор", "ничего интересного", "ничего интересного", nil, nil)
+	street := NewLocation("улица", "на улице весна. можно пройти - домой", "жарковато", nil, nil)
+	kitchen := NewLocation("кухня", "ты находишься на кухне", "кухня, ничего интересного", nil,
+		nil)
 
 	room.Object = append(room.Object, tableRoom, chair)
 	hallway.Object = append(hallway.Object, door, wardrobe)
@@ -371,6 +405,11 @@ func handleCommand(command string) string {
 		if len(parts) < 2 {
 			return "укажите, что надеть"
 		}
+
+		if RealPlayer.Location.CustomOnDress != nil {
+			return RealPlayer.Location.CustomOnDress(RealPlayer, parts[1])
+		}
+
 		return PutOnDress(RealPlayer, parts[1])
 	case "взять":
 		if len(parts) < 2 {
